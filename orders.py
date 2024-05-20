@@ -12,7 +12,6 @@ from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 import requests
 
 def getLtpData(name, token):
-    
     api_key = "0rNQURBd"
     clientId = "A51768681"
     pwd = "1960"
@@ -24,14 +23,15 @@ def getLtpData(name, token):
     conn  = http.client.HTTPSConnection("apiconnect.angelbroking.com")
     
     payload_ltp = {
-        "exchange": "BSE",
-        "tradingsymbol": "ADANIENT",  # Encode with the appropriate encoding
+        "exchange": "NSE",
+        "tradingsymbol": "ADANIENT-EQ",  # Encode with the appropriate encoding
         "symboltoken": 25  # Encode with the appropriate encoding
     }
     payload_ltp_json = json.dumps(payload_ltp)
-    response=smartApi.ltpData('NSE',name,token)
+    response=smartApi.getCandleData('NSE',name,token)
     print(response)
     return response
+
 
 def setBuyOrders(buy_signals):
     conn = http.client.HTTPSConnection("apiconnect.angelbroking.com")
