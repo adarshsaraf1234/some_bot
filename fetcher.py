@@ -82,12 +82,13 @@ def generate_signals(filePath,name):
 def generate_trading_scrips(filePath,name,buy_signals,sell_signals,token):
     data=pd.read_csv(filePath)
     last_row=data.iloc[-1]
-    # print(last_row)
+    
     trade_signal = last_row['Signal']
     if trade_signal == "Sell":
         sell_signals[name] = token
     elif trade_signal == "Buy":
         buy_signals[name] = token
+
     return buy_signals,sell_signals
     
 def newSignals52WhighVol(filePath):
@@ -127,7 +128,7 @@ def newSignals52WhighVol(filePath):
     rsi_threshold_sell = 60  # Overbought sell signal
 
     df.loc[(df['10-day MA'] > df['20-day SMA']) & (df['ADX'] > adx_threshold) ,'Signal'] = 'Buy'
-    df.loc[(df['10-day MA'] < df['20-day SMA']) & (df['ADX'] < adx_threshold) ,'Signal'] = 'Sell'
+    df.loc[(df['10-day MA'] < df['20-day SMA']) | (df['ADX'] < adx_threshold) ,'Signal'] = 'Sell'
     
     df.loc[(df['Signal']!='Buy') & (df['Signal']!='Sell'),'Signal'] = 'No Signal'
     return df
@@ -149,8 +150,9 @@ def maxVoltilityMidcap(buy_signals_midcap):
         buy_scrips.append([k, v])
     # Only keep the scripts of the top 3 most volatile stocks
     buy_scrips = [script for script in buy_scrips if script[0] in [top[0] for top in top_3_scrips]]
-    print("Expect max volatility in these midcap stocks :")
-    print(top_3_scrips)
+    # print("Expect max volatility in these midcap stocks :")
+    # print(top_3_scrips)
+    return top_3_scrips
 
 def maxVoltilityNifty(buy_signals):
     buy_scrips=list()
@@ -169,8 +171,9 @@ def maxVoltilityNifty(buy_signals):
         buy_scrips.append([k, v])
     # Only keep the scripts of the top 3 most volatile stocks
     buy_scrips = [script for script in buy_scrips if script[0] in [top[0] for top in top_3_scrips]]
-    print("Expect Max Volatility in these Nifty stocks :")
-    print(top_3_scrips)
+    # print("Expect Max Volatility in these Nifty stocks :")
+    # print(top_3_scrips)
+    return top_3_scrips
 
     
 def RetMidcap(name):
@@ -227,54 +230,70 @@ NiftyMidcap_dict = nifty2["Symbol"]
 
 Nifty_T = list(df_Nifty.iloc[0:]['Token'])
 
-for k,v in Nifty50_dict.items():
-    name = v
-    file_name = os.path.join('data/', name+'.csv')
-    file_name = "data/"+name+".csv"
-    # data = generate_signals(file_name,name)
-    data = newSignals52WhighVol(file_name)
-    signal_file_path ="signals/"+name+".csv"
-    data.to_csv(signal_file_path)
-    buy_signals,sell_signals = generate_trading_scrips(signal_file_path,name,buy_signals,sell_signals,k)
-
-
-maxVoltilityNifty(buy_signals)
-
-print("Buy Signals")
-for k,v in buy_signals.items():
-    print(k,v,"Buy")
-    RetNifty(k)
-   
-print("Sell Signals")
-for k,v in sell_signals.items():
-    print(k,v,"Sell")
-
-buy_signals_midcap = {}
-sell_signals_midcap= {}
+def generate_calls(Nifty50_dict, NiftyMidcap_dict ):
+    buy_signals={}
+    sell_signals={}
+    for k,v in Nifty50_dict.items():
+        name = v
+        # print(name)
+        file_name = os.path.join('data/', name+'.csv')
+        file_name = "data/"+name+".csv"
+        # data = generate_signals(file_name,name)
+        data = newSignals52WhighVol(file_name)
+        signal_file_path ="signals/"+name+".csv"
+        data.to_csv(signal_file_path)
+        buy_signals,sell_signals = generate_trading_scrips(signal_file_path,name,buy_signals,sell_signals,k)
     
-for k,v in NiftyMidcap_dict.items():
-    name = v
-    file_name = os.path.join('midcap_data/', name+'.csv')
-    file_name = "midcap_data/"+name+".csv"
-    # data = generate_signals(file_name,name)
-    data = newSignals52WhighVol(file_name)
-    signal_file_path ="midcap_signals/"+name+".csv"
-    data.to_csv(signal_file_path)
-    buy_signals_midcap,sell_signals_midcap = generate_trading_scrips(signal_file_path,name,buy_signals_midcap,sell_signals_midcap,k)
+    # print(buy_signals)
 
-maxVoltilityMidcap(buy_signals_midcap)
+    buy_nifty_call = maxVoltilityNifty(buy_signals)
 
+    buy_signals_midcap = {}
+    sell_signals_midcap = {}
 
-print("Buy Signals midcap")
-print("")
-for k,v in buy_signals_midcap.items():
-    RetMidcap(k)
-    print(k,v,"Buy")
-print("Sell Signals midcap")
-print("")
-for k,v in sell_signals_midcap.items():
-    print(k,v,"Sell")
+    for k,v in NiftyMidcap_dict.items():
+        name = v
+        file_name = os.path.join('midcap_data/', name+'.csv')
+        file_name = "midcap_data/"+name+".csv"
+        # data = generate_signals(file_name,name)
+        data = newSignals52WhighVol(file_name)
+        signal_file_path ="midcap_signals/"+name+".csv"
+        data.to_csv(signal_file_path)
+        buy_signals_midcap,sell_signals_midcap = generate_trading_scrips(signal_file_path,name,buy_signals_midcap,sell_signals_midcap,k)
 
-# test("REC-EQ")
+    # print(buy_signals_midcap)
+
+    buy_mid_call = maxVoltilityMidcap(buy_signals_midcap)
+    # print(buy_nifty_call,buy_mid_call)
+    buy_calls = {}
+    for x in buy_mid_call:
+        buy_calls[x[0]] = x[1]
+
+    for y in buy_nifty_call:
+        buy_calls[y[0]] = y[1]
+
+    return buy_calls
+
+def newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict):
+    new_signals=[]
+    for k,v in buy_calls.items():
+        name=k
+        if os.path.exists("signals/"+name+".csv"):
+            filePath = "some_bot/signals/"+name+".csv"
+            # print(filePath)
+        elif os.path.exists("some_bot/midcap_signals/"+name+".csv"):
+            filePath = "some_bot/midcap_signals/"+name+'.csv'
+            # print(filePath)s
+        data = pd.read_csv(filePath)
+        print(data.head(-5))
+        second_last_row = data.iloc[-2]
+        last_row = data.iloc[-1]
+        # new_signals = []
+        # print(second_last_row)
+        # print(last_row)
+        if(second_last_row['Signal']=="Sell" and last_row['Signal'] == "Buy"):
+            print(name)
+            new_signals.append(name)
+    return new_signals
 
 

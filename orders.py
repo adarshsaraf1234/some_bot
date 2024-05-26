@@ -20,7 +20,7 @@ def getLtpData(name, token):
     # response = requests.get('https://api.ipify.org?format=json')
     totp=pyotp.TOTP(token).now()
     data = smartApi.generateSession(clientId, pwd, totp)
-    conn  = http.client.HTTPSConnection("apiconnect.angelbroking.com")
+    # conn  = http.client.HTTPSConnection("apiconnect.angelbroking.com")
     
     payload_ltp = {
         "exchange": "NSE",
@@ -28,7 +28,7 @@ def getLtpData(name, token):
         "symboltoken": 25  # Encode with the appropriate encoding
     }
     payload_ltp_json = json.dumps(payload_ltp)
-    response=smartApi.getCandleData('NSE',name,token)
+    response=smartApi.ltpData('NSE','ADANIENT-EQ','25')
     print(response)
     return response
 
