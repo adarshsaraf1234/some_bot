@@ -279,20 +279,19 @@ def newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict):
     for k,v in buy_calls.items():
         name=k
         if os.path.exists("signals/"+name+".csv"):
-            filePath = "some_bot/signals/"+name+".csv"
-            # print(filePath)
-        elif os.path.exists("some_bot/midcap_signals/"+name+".csv"):
-            filePath = "some_bot/midcap_signals/"+name+'.csv'
-            # print(filePath)s
-        data = pd.read_csv(filePath)
-        print(data.head(-5))
-        second_last_row = data.iloc[-2]
-        last_row = data.iloc[-1]
-        # new_signals = []
+            filePath = "signals/"+name+".csv"
+            
+        elif os.path.exists("midcap_signals/"+name+".csv"):
+            filePath = "midcap_signals/"+name+'.csv'
+            
+        data = pd.read_csv(filePath, nrows=1000)
+        # print(filePath)
+        second_last_row = data.loc[data.index[-2]]
+        last_row = data.loc[data.index[-1]]
         # print(second_last_row)
         # print(last_row)
         if(second_last_row['Signal']=="Sell" and last_row['Signal'] == "Buy"):
-            print(name)
+            # print(name)
             new_signals.append(name)
     return new_signals
 

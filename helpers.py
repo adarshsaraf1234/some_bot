@@ -26,6 +26,7 @@ def fetchCurrentPositions():
     return holding_response
 
 all_holdings = fetchCurrentPositions()
+print(all_holdings['data'])
 #=====================================================================================
 df_Nifty = pd.read_csv("Nifty50.csv")
 df_Nifty_Midcap = pd.read_csv("NiftyMidcap.csv")
@@ -47,6 +48,8 @@ def processHoldings(hold):
     print(buy_calls)
     new_calls = newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict)
     print(new_calls)
+    # if all_holdings['data'] == []:
+
 
 processHoldings(all_holdings)
-    
+
