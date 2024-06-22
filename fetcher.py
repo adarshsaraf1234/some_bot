@@ -128,7 +128,7 @@ def newSignals52WhighVol(filePath):
     rsi_threshold_sell = 60  # Overbought sell signal
 
     df.loc[(df['10-day MA'] > df['20-day SMA']) & (df['ADX'] > adx_threshold) ,'Signal'] = 'Buy'
-    df.loc[(df['10-day MA'] < df['20-day SMA']) | (df['ADX'] < adx_threshold) ,'Signal'] = 'Sell'
+    df.loc[(df['10-day MA'] < df['20-day SMA']) ,'Signal'] = 'Sell'
     
     df.loc[(df['Signal']!='Buy') & (df['Signal']!='Sell'),'Signal'] = 'No Signal'
     return df
