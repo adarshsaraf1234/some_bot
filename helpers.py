@@ -8,7 +8,9 @@ import requests
 import socket 
 import mimetypes
 from fetcher import *
+
 import pyotp
+from zerodha import updateNiftyMidcapScrips,updateNiftyScrips
 from SmartApi import SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 
@@ -25,8 +27,8 @@ def fetchCurrentPositions():
     
     return holding_response
 
-all_holdings = fetchCurrentPositions()
-print(all_holdings['data'])
+# all_holdings = fetchCurrentPositions()
+# print(all_holdings['data'])
 #=====================================================================================
 df_Nifty = pd.read_csv("Nifty50.csv")
 df_Nifty_Midcap = pd.read_csv("NiftyMidcap.csv")
@@ -43,13 +45,24 @@ nifty2 = df_2.to_dict()
 NiftyMidcap_dict = nifty2["Symbol"]
 #======================================================================================
 
-def processHoldings(hold):
-    buy_calls = generate_calls(Nifty50_dict, NiftyMidcap_dict)
-    print(buy_calls)
-    new_calls = newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict)
-    print(new_calls)
+# def processHoldings(hold):
+#     updateNiftyScrips()
+#     updateNiftyMidcapScrips()
+#     buy_calls = generate_calls(Nifty50_dict, NiftyMidcap_dict)
+#     print(buy_calls)
+#     new_calls = newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict)
+#     print(new_calls)
     # if all_holdings['data'] == []:
 
 
-processHoldings(all_holdings)
-
+# processHoldings(all_holdings)
+updateNiftyScrips()
+updateNiftyMidcapScrips()
+buy_calls = generate_calls(Nifty50_dict, NiftyMidcap_dict)
+print(buy_calls)
+new_calls = newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict)
+print(new_calls)
+# buy_calls = generate_calls(Nifty50_dict, NiftyMidcap_dict)
+# print(buy_calls)
+# new_calls = newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict)
+# print(new_calls)

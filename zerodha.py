@@ -79,36 +79,27 @@ date_string = current_date.strftime("%Y-%m-%d")  # Format as YYYY-MM-DD
 yesterday = current_date - timedelta(days=1)
 yesterday_string = yesterday.strftime("%Y-%m-%d")
 # for t in Nifty_T:
-#     route = 'api.candle.data'
-#     method = 'POST'
-#     params = {
-#             "exchange": "NSE",
-#             "symboltoken": str(t),
-#             "interval": 'ONE_DAY',
-#             "fromdate": '2022-07-01'+' '+'09:15',
-#             "todate": date_string+' '+'15:30'
-#         }
-#     data=smartApi._request(route=route, method=method, parameters=params)['data']
-#     columns=["Date","Open","High","Low","Close","Volume"]
-#     data[0]=columns
-#     name = nifty_names[t]
-#     file_name = os.path.join('data/', name+'.csv')
-#     file_name = "data/"+name+".csv"
-#     with open(file_name,'w',newline='') as csv_file:
-#         csv_writer = csv.writer(csv_file)
-#         csv_writer.writerows(data)
-#     time.sleep(60)
-def remove_last_line_from_csv(file_name):
-    # Read the content of the CSV file into a list of lines
-    with open(file_name, 'r') as csv_file:
-        lines = csv_file.readlines()
+def fetchUnRegScrips(k,v):
+    route = 'api.candle.data'
+    method = 'POST'
+    params = {
+            "exchange": "NSE",
+            "symboltoken": str(k),
+            "interval": 'ONE_DAY',
+            "fromdate": '2022-07-01'+' '+'09:15',
+            "todate": date_string+' '+'15:30'
+        }
+    data=smartApi._request(route=route, method=method, parameters=params)['data']
+    print(data)
+    columns=["Date","Open","High","Low","Close","Volume"]
+    data[0]=columns
 
-    # Remove the last line if the file has content
-    if lines:
-        lines.pop()
-        # Write the modified content back to the CSV file
-        with open(file_name, 'w') as csv_file:
-            csv_file.writelines(lines)
+    file_name = os.path.join('data/'+v+'.csv')
+    file_name = "data/"+v+".csv"
+    with open(file_name,'w',newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerows(data)
+#     time.sleep(60)
 
 def cleanData(filePath):
     df=pd.read_csv(filePath)
@@ -123,7 +114,11 @@ def updateNiftyScrips():
         print(name)
         file_name = os.path.join('data/', name+'.csv')
         file_name = "data/"+name+".csv"
-        df = pd.read_csv(file_name)
+        if(not os.path.exists(file_name)):
+            fetchUnRegScrips(k,v)
+            return 
+        else:
+            df = pd.read_csv(file_name)
         last_row = df.iloc[-1] 
         last_date = last_row["Date"]
         last_date = last_date[0:10]
@@ -193,8 +188,9 @@ def updateNiftyMidcapScrips():
 # response = smartApi.ltpData('NSE','SBIN-EQ','3045')['data']
 # print(response)
 
-updateNiftyScrips()
-updateNiftyMidcapScrips()
+
+# updateNiftyScrips()
+# updateNiftyMidcapScrips()
 
 
 def getNiftyMidcapIndicies():

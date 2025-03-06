@@ -133,6 +133,133 @@ def newSignals52WhighVol(filePath):
     df.loc[(df['Signal']!='Buy') & (df['Signal']!='Sell'),'Signal'] = 'No Signal'
     return df
 
+def ef_newSignals52WhighVolMACD(filePath):
+    """
+    This function analyzes a pandas dataframe and generates buy and sell signals based on
+    MACD, Average True Range (ATR), ADX, RSI, and proximity to 52-week high.
+    
+    Args:
+    filePath (str): The path to the CSV file containing OHLC data.
+    
+    Returns:
+    pandas.DataFrame: The original dataframe with new columns for various indicators 
+    and a 'Signal' column indicating buying and selling opportunities.
+    """
+    # Read the CSV file
+    df = pd.read_csv(filePath)
+    
+    # Calculate RSI (assuming calculate_rsi function exists)
+    df['RSI'] = calculate_rsi(df)
+    
+    # Calculate ADX (assuming calculate_adx function exists)
+    df = calculate_adx(df)
+    
+    # Calculate 52-week high
+    df['52-week High'] = df['Close'].transform(lambda x: x.rolling(window=252).max())
+    
+    # Calculate 52-week high threshold (5% below the 52-week high)
+    df['Threshold'] = df['52-week High'] * 0.95
+    
+    # Calculate historical volatility (20-day rolling standard deviation)
+    df['Volatility'] = ((df['Close'].transform(lambda x: x.rolling(window=20).std())) / df['Close']) * 100
+    
+    # Calculate MACD
+    # Exponential Moving Averages for MACD
+    df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
+    df['EMA26'] = df['Close'].ewm(span=26, adjust=False).mean()
+    
+    # MACD Line
+    df['MACD'] = df['EMA12'] - df['EMA26']
+    
+    # Signal Line (9-day EMA of MACD)
+    df['Signal Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
+    
+    # MACD Histogram
+    df['MACD Histogram'] = df['MACD'] - df['Signal Line']
+    
+    # Define thresholds
+    adx_threshold = 25  # Strong trend indicator
+    volatility_threshold = 0.5  # Volatility threshold
+    rsi_threshold_buy = 30  # Oversold buy signal
+    rsi_threshold_sell = 70  # Overbought sell signal
+    
+    # Initialize Signal column
+    df['Signal'] = 'No Signal'
+    
+    # Buy Signals
+    df.loc[
+        (df['MACD'] > df['Signal Line']) &  # MACD crossing above Signal Line
+         (df['ADX'] > adx_threshold) ,       # Strong trend
+        #(df['RSI'] <= rsi_threshold_buy),  # Oversold condition
+        #(df['Close'] >= df['Threshold']),  # Close to 52-week high
+        # (df['Volatility'] <= volatility_threshold),  # Low volatility
+        'Signal'
+    ] = 'Buy'
+    
+    # Sell Signals
+    df.loc[
+        (df['MACD'] < df['Signal Line'])&   # MACD crossing below Signal Line
+        (df['RSI'] >= rsi_threshold_sell) ,  # Overbought condition
+        #(df['ADX'] > adx_threshold),         # Strong trend
+        'Signal'
+    ] = 'Sell'
+    
+    return df
+
+def eg_newSignals52WhighVolMACD(filePath):
+    """
+    Generates buy/sell signals based on MACD crossover, volume spikes, and volatility.
+
+    Args:
+    filePath (str): Path to the CSV containing OHLCV data.
+
+    Returns:
+    pandas.DataFrame: Dataframe with indicators and buy/sell signals.
+    """
+    # Load CSV
+    df = pd.read_csv(filePath)
+
+    df['Volatility'] = ((df['Close'].transform(lambda x: x.rolling(window=20).std())) / df['Close']) * 100
+
+    # Calculate MACD (12/26/9)
+    df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
+    df['EMA26'] = df['Close'].ewm(span=26, adjust=False).mean()
+    df['MACD'] = df['EMA12'] - df['EMA26']
+    df['Signal Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
+
+    # Calculate ATR (Average True Range) for Volatility
+    df['H-L'] = df['High'] - df['Low']
+    df['H-PC'] = abs(df['High'] - df['Close'].shift(1))
+    df['L-PC'] = abs(df['Low'] - df['Close'].shift(1))
+    df['TR'] = df[['H-L', 'H-PC', 'L-PC']].max(axis=1)
+    df['ATR'] = df['TR'].rolling(window=14).mean()
+
+    # Calculate 20-Day Average Volume
+    df['Avg_Volume'] = df['Volume'].rolling(window=20).mean()
+
+    # Initialize Signal Column
+    df['Signal'] = 'No Signal'
+
+    # Buy Signal: MACD Bullish crossover + High Volume + Above Average Volatility
+    df.loc[
+        (df['MACD'] > df['Signal Line']) &                          # MACD Bullish Crossover
+        # (df['Volume'] > df['Avg_Volume'] * 1.1) ,                   # Volume Spike
+        (df['ATR'] > df['ATR'].rolling(window=20).mean()),          # Above Average Volatility
+        'Signal'
+    ] = 'Buy'
+
+    # Sell Signal: MACD Bearish crossover + High Volume + Above Average Volatility
+    df.loc[
+        (df['MACD'] < df['Signal Line']) &                         # MACD Bearish Crossover
+        # (df['Volume'] > df['Avg_Volume'] * 1.1) ,                   # Volume Spike
+        (df['ATR'] > df['ATR'].rolling(window=20).mean()),          # Above Average Volatility
+        'Signal'
+    ] = 'Sell'
+
+    return df
+
+
+
 def maxVoltilityMidcap(buy_signals_midcap):
     buy_scrips=list()
     top_3_scrips = []  # List to store the top 3 most volatile stocks
@@ -239,7 +366,7 @@ def generate_calls(Nifty50_dict, NiftyMidcap_dict ):
         file_name = os.path.join('data/', name+'.csv')
         file_name = "data/"+name+".csv"
         # data = generate_signals(file_name,name)
-        data = newSignals52WhighVol(file_name)
+        data = eg_newSignals52WhighVolMACD(file_name)
         signal_file_path ="signals/"+name+".csv"
         data.to_csv(signal_file_path)
         buy_signals,sell_signals = generate_trading_scrips(signal_file_path,name,buy_signals,sell_signals,k)
@@ -256,7 +383,7 @@ def generate_calls(Nifty50_dict, NiftyMidcap_dict ):
         file_name = os.path.join('midcap_data/', name+'.csv')
         file_name = "midcap_data/"+name+".csv"
         # data = generate_signals(file_name,name)
-        data = newSignals52WhighVol(file_name)
+        data = eg_newSignals52WhighVolMACD(file_name)
         signal_file_path ="midcap_signals/"+name+".csv"
         data.to_csv(signal_file_path)
         buy_signals_midcap,sell_signals_midcap = generate_trading_scrips(signal_file_path,name,buy_signals_midcap,sell_signals_midcap,k)
@@ -288,8 +415,7 @@ def newBuyCalls(buy_calls,Nifty50_dict, NiftyMidcap_dict):
         # print(filePath)
         second_last_row = data.loc[data.index[-2]]
         last_row = data.loc[data.index[-1]]
-        # print(second_last_row)
-        # print(last_row)
+        
         if(second_last_row['Signal']=="Sell" and last_row['Signal'] == "Buy"):
             # print(name)
             new_signals.append(name)
